@@ -35,7 +35,14 @@ dependencies:
 
   # Google Login
   google_sign_in: ^6.2.0
+  # QR code generation (for displaying QR)
+  qr_flutter: ^4.1.0
+  # QR code scanning (for scanning QR with camera)
+  mobile_scanner: ^5.1.1
+  # HTTP requests (already in your file, but make sure it’s there)
   http: ^1.2.0
+
+
 
 dev_dependencies:
   build_runner: any
