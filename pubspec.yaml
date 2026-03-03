@@ -1,0 +1,45 @@
+name: smart_gallery
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Cupertino (iOS-style) icons
+  cupertino_icons: ^1.0.8
+
+  # Gallery Access
+  photo_manager: ^3.0.0
+
+  # Local Database
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.0.15
+
+  # AI (ML Kit latest)
+  google_mlkit_image_labeling: ^0.14.2
+  google_mlkit_commons: ^0.11.0
+
+  # State Management
+  provider: ^6.1.0
+
+  # Local Sharing
+  shelf: ^1.4.0
+  multicast_dns: ^0.3.0
+
+  # Google Login
+  google_sign_in: ^6.2.0
+  http: ^1.2.0
+
+dev_dependencies:
+  build_runner: any
+  isar_generator: any
+
+flutter:
+  uses-material-design: true
