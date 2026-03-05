@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/google_service.dart';
 import '../services/share_service.dart';
+import '../providers/user_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,10 +24,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings"),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey.shade300,
+              backgroundImage:
+              user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
+              child: user?.photoUrl == null
+                  ? const Icon(Icons.person, color: Colors.grey)
+                  : null,
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -35,10 +54,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             /// GOOGLE SIGN IN
             ElevatedButton.icon(
               onPressed: () async {
-                await _googleService.signIn();
-                if (mounted) {
+                final account = await _googleService.signIn();
+                if (account != null && mounted) {
+                  userProvider.setUser(account);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Signed in with Google")),
+                    SnackBar(content: Text("Signed in as ${account.email}")),
                   );
                 }
               },
@@ -52,6 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ElevatedButton.icon(
               onPressed: () async {
                 await _googleService.signOut();
+                userProvider.clearUser();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Signed out from Google")),
@@ -69,34 +90,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 if (_serverRunning) {
                   await _shareService.stopServer();
-
                   setState(() {
                     _serverRunning = false;
                     _serverUrl = null;
                   });
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Sharing server stopped")),
-                    );
-                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Sharing server stopped")),
+                  );
                 } else {
                   await _shareService.startServer();
-
                   final ip = "10.0.2.2"; // emulator IP
-                  final url =
-                      "http://$ip:8080?token=${_shareService.token}";
-
+                  final url = "http://$ip:8080/ping?token=${_shareService.token}";
                   setState(() {
                     _serverRunning = true;
                     _serverUrl = url;
                   });
-
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Server started: $url")),
-                    );
-                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Server started: $url")),
+                  );
                 }
               },
               icon: Icon(_serverRunning ? Icons.stop : Icons.share),
@@ -173,25 +184,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
           if (url != null) {
             _isProcessing = true;
-
-            print("📷 QR scanned: $url"); // Debug print
-
             await controller.stop();
 
             try {
               final response = await http.get(Uri.parse(url));
-
-              print("✅ Connected to server at $url");
-              print("Response status: ${response.statusCode}");
-              print("Response body: ${response.body}");
-
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Response: ${response.body}")),
                 );
               }
             } catch (e) {
-              print("❌ Error connecting to server: $e");
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Error: $e")),

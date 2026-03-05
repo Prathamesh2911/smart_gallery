@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../database/isar_service.dart';
 import '../models/album_model.dart';
-import '../widgets/album_tile.dart'; // <-- use reusable widget
+import '../widgets/album_tile.dart';
+import '../providers/user_provider.dart'; // <-- NEW
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -27,10 +29,27 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context); // <-- NEW
+    final user = userProvider.user; // <-- NEW
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Albums'),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey.shade300,
+              backgroundImage:
+              user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
+              child: user?.photoUrl == null
+                  ? const Icon(Icons.person, color: Colors.grey)
+                  : null,
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -68,7 +87,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             itemCount: albums.length,
             itemBuilder: (context, index) {
               final album = albums[index];
-              return AlbumTile(album: album); // <-- use AlbumTile widget
+              return AlbumTile(album: album);
             },
           );
         },

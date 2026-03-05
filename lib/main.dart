@@ -5,6 +5,7 @@ import 'package:smart_gallery/screens/album_screen.dart';
 import 'package:smart_gallery/providers/album_provider.dart';
 import 'package:smart_gallery/database/isar_service.dart';
 import 'package:smart_gallery/screens/settings_screen.dart';
+import 'providers/user_provider.dart';
 
 
 void main() async {
@@ -15,6 +16,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AlbumProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: const MyApp(),
     ),
