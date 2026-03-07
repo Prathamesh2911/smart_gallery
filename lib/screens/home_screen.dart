@@ -1,11 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/album_provider.dart';
-import '../providers/user_provider.dart';
-import '../services/album_service.dart';
+import 'package:photo_manager/photo_manager.dart';
 import '../services/photo_service.dart';
-import '../models/album_model.dart';
-import '../widgets/album_tile.dart';
+import 'photo_viewer_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,71 +13,77 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<AssetEntity> _photos = [];
+  bool _loading = true;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-          () => Provider.of<AlbumProvider>(context, listen: false).fetchAlbums(),
-    );
+    _loadPhotos();
+  }
+
+  Future<void> _loadPhotos() async {
+    try {
+      final photos = await PhotoService().getAllImages();
+      setState(() {
+        _photos = photos;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading photos: $e")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final albumProvider = Provider.of<AlbumProvider>(context);
-    final albums = albumProvider.albums;
-
-    final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.user;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Smart Gallery'),
+        title: const Text("Smart Gallery"),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage:
-              user?.photoUrl != null ? NetworkImage(user!.photoUrl!) : null,
-              child: user?.photoUrl == null
-                  ? const Icon(Icons.person, color: Colors.grey)
-                  : null,
-            ),
-          ),
-        ],
       ),
-      body: albums.isEmpty
-          ? const Center(child: Text('No albums yet'))
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _photos.isEmpty
+          ? const Center(child: Text("No photos found"))
           : GridView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.75,
+          crossAxisCount: 3,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
         ),
-        itemCount: albums.length,
+        itemCount: _photos.length,
         itemBuilder: (context, index) {
-          final album = albums[index];
-          return AlbumTile(album: album);
+          final photo = _photos[index];
+          return FutureBuilder<File?>(
+            future: photo.file,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox.shrink();
+              }
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PhotoViewerScreen(
+                        photos: _photos,
+                        initialIndex: index,
+                      ),
+                    ),
+                  );
+                },
+                child: Image.file(
+                  snapshot.data!,
+                  fit: BoxFit.cover,
+                ),
+              );
+            },
+          );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          try {
-            final photos = await PhotoService().getAllImages();
-            await AlbumService().createAlbumsFromPhotos(photos);
-            await albumProvider.fetchAlbums();
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error fetching photos: $e')),
-            );
-          }
-        },
-        icon: const Icon(Icons.photo_library),
-        label: const Text("Import Photos"),
       ),
     );
   }
