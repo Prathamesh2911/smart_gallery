@@ -22,4 +22,11 @@ class IsarService {
       await isar.albumModels.put(album);
     });
   }
+
+  // ✅ New method to delete album
+  static Future<void> deleteAlbum(int id) async {
+    await isar.writeTxn(() async {
+      await isar.albumModels.delete(id);
+    });
+  }
 }

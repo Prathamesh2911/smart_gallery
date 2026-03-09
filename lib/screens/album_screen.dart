@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../database/isar_service.dart';
 import '../models/album_model.dart';
 import '../widgets/album_tile.dart';
-import '../providers/user_provider.dart'; // <-- NEW
+import '../providers/user_provider.dart';
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -27,10 +27,47 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     });
   }
 
+  Future<void> _createAlbum() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Create Album"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: "Album name"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text("Create"),
+          ),
+        ],
+      ),
+    );
+
+    if (name != null && name.isNotEmpty) {
+      final album = AlbumModel(
+        name: name,
+        date: DateTime.now(),
+        imagePaths: [],
+      );
+      await IsarService.addAlbum(album);
+      _reloadAlbums();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Album '$name' created")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context); // <-- NEW
-    final user = userProvider.user; // <-- NEW
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,15 +89,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final album = AlbumModel(
-            name: 'Sample Album',
-            date: DateTime.now(),
-            imagePaths: [],
-          );
-          await IsarService.addAlbum(album);
-          _reloadAlbums();
-        },
+        onPressed: _createAlbum,
         icon: const Icon(Icons.add),
         label: const Text("Add Album"),
       ),
@@ -87,7 +116,16 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             itemCount: albums.length,
             itemBuilder: (context, index) {
               final album = albums[index];
-              return AlbumTile(album: album);
+              return AlbumTile(
+                album: album,
+                onDelete: () async {
+                  await IsarService.deleteAlbum(album.id);
+                  _reloadAlbums();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Album '${album.name}' deleted")),
+                  );
+                },
+              );
             },
           );
         },

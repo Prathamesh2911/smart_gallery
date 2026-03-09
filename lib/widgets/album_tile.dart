@@ -4,7 +4,9 @@ import '../models/album_model.dart';
 
 class AlbumTile extends StatelessWidget {
   final AlbumModel album;
-  const AlbumTile({super.key, required this.album});
+  final VoidCallback onDelete;
+
+  const AlbumTile({super.key, required this.album, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +14,7 @@ class AlbumTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
+          // Show first image as cover, or placeholder
           album.imagePaths.isNotEmpty
               ? Image.file(
             File(album.imagePaths[0]),
@@ -25,6 +28,8 @@ class AlbumTile extends StatelessWidget {
               child: Icon(Icons.photo, size: 60, color: Colors.grey),
             ),
           ),
+
+          // Gradient overlay for text readability
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -34,6 +39,8 @@ class AlbumTile extends StatelessWidget {
               ),
             ),
           ),
+
+          // Album name at bottom
           Positioned(
             bottom: 12,
             left: 12,
@@ -46,6 +53,37 @@ class AlbumTile extends StatelessWidget {
                 fontSize: 16,
               ),
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // Delete button at top-right
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Delete Album"),
+                    content: Text("Are you sure you want to delete '${album.name}'?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text("Delete"),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  onDelete();
+                }
+              },
             ),
           ),
         ],

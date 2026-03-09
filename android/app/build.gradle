@@ -21,16 +21,26 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.smart_gallery"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId "com.example.smartgallery"
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+    signingConfigs {
+        release {
+            storeFile file(MYAPP_STORE_FILE)
+            storePassword MYAPP_STORE_PASSWORD
+            keyAlias MYAPP_KEY_ALIAS
+            keyPassword MYAPP_KEY_PASSWORD
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }

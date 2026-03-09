@@ -6,11 +6,17 @@ import 'package:smart_gallery/providers/album_provider.dart';
 import 'package:smart_gallery/database/isar_service.dart';
 import 'package:smart_gallery/screens/settings_screen.dart';
 import 'providers/user_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:photo_manager/photo_manager.dart';
+
+
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await IsarService.init();
+  // Request gallery permission before running the app
+  await requestGalleryPermission();
 
   runApp(
     MultiProvider(
@@ -23,12 +29,24 @@ void main() async {
   );
 }
 
+
+Future<void> requestGalleryPermission() async {
+  // This handles both Android 10 (READ_EXTERNAL_STORAGE) and Android 13 (READ_MEDIA_IMAGES)
+  final result = await PhotoManager.requestPermissionExtend();
+
+  if (!result.isAuth) {
+    debugPrint("Gallery permission denied");
+    // Optionally show a dialog or redirect user to settings
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Smart Gallery',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
