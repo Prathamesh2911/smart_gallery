@@ -37,6 +37,15 @@ class IsarService {
   static Future<void> saveFavorites(List<String> ids) async {
     await isar.writeTxn(() async {
       var favAlbum = await getFavoritesAlbum();
+
+      if (ids.isEmpty) {
+        // If no favorites left, delete the album entirely
+        if (favAlbum != null) {
+          await isar.albumModels.delete(favAlbum.id);
+        }
+        return;
+      }
+
       if (favAlbum == null) {
         favAlbum = AlbumModel(
           name: "Favorites",
@@ -47,6 +56,7 @@ class IsarService {
       } else {
         favAlbum.imagePaths = ids;
       }
+
       await isar.albumModels.put(favAlbum);
     });
   }

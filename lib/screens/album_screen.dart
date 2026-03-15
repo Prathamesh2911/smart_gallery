@@ -7,6 +7,12 @@ import '../widgets/album_tile.dart';
 import '../providers/user_provider.dart';
 import 'photo_viewer_screen.dart';
 
+class AlbumsData {
+  final List<AlbumModel> albums;
+  final AlbumModel? favorites;
+  AlbumsData(this.albums, this.favorites);
+}
+
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
 
@@ -15,18 +21,24 @@ class AlbumsScreen extends StatefulWidget {
 }
 
 class _AlbumsScreenState extends State<AlbumsScreen> {
-  late Future<List<AlbumModel>> _albumsFuture;
+  late Future<AlbumsData> _albumsDataFuture;
 
   @override
   void initState() {
     super.initState();
-    _albumsFuture = IsarService.getAlbums();
+    _reloadAlbums();
   }
 
   void _reloadAlbums() {
     setState(() {
-      _albumsFuture = IsarService.getAlbums();
+      _albumsDataFuture = _loadAlbumsData();
     });
+  }
+
+  Future<AlbumsData> _loadAlbumsData() async {
+    final albums = await IsarService.getAlbums();
+    final favorites = await IsarService.getFavoritesAlbum();
+    return AlbumsData(albums, favorites);
   }
 
   Future<void> _createAlbum() async {
@@ -56,7 +68,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
       final album = AlbumModel(
         name: name,
         date: DateTime.now(),
-        imagePaths: [], // stores AssetEntity IDs
+        imagePaths: [],
       );
       await IsarService.addAlbum(album);
       _reloadAlbums();
@@ -95,25 +107,27 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         icon: const Icon(Icons.add),
         label: const Text("Add Album"),
       ),
-      body: FutureBuilder<List<AlbumModel>>(
-        future: _albumsFuture,
+      body: FutureBuilder<AlbumsData>(
+        future: _albumsDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final albums = snapshot.data ?? [];
+          final albumsData = snapshot.data;
+          if (albumsData == null) {
+            return const Center(child: Text("No albums found"));
+          }
+
+          final albums = albumsData.albums;
+          final favAlbum = albumsData.favorites;
+
           final tiles = <Widget>[];
 
-          // Favorites album tile
-          tiles.add(FutureBuilder<AlbumModel?>(
-            future: IsarService.getFavoritesAlbum(),
-            builder: (context, favSnap) {
-              if (!favSnap.hasData || favSnap.data == null) {
-                return const SizedBox.shrink();
-              }
-              final favAlbum = favSnap.data!;
-              return GestureDetector(
+          // Add Favorites tile only if it exists
+          if (favAlbum != null) {
+            tiles.add(
+              GestureDetector(
                 onTap: () async {
                   final favoritePhotos = await Future.wait(
                     favAlbum.imagePaths.map((id) => AssetEntity.fromId(id)),
@@ -140,9 +154,9 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                     );
                   },
                 ),
-              );
-            },
-          ));
+              ),
+            );
+          }
 
           // Other albums (exclude Favorites)
           tiles.addAll(
