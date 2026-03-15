@@ -6,15 +6,16 @@ class AlbumModel {
   Id id = Isar.autoIncrement;
   late String name;
   late DateTime date;
-  List<String> imagePaths = [];
+  List<String> imagePaths = []; // rename later to assetIds for clarity
 
-  // Named constructor for easy album creation
+  bool isFavorites = false;
+
   AlbumModel({
     required this.name,
     required this.date,
-    required this.imagePaths,
+    required this.imagePaths, // these will be asset IDs
+    this.isFavorites = false,
   });
 
-  // Default constructor
   AlbumModel.empty();
 }

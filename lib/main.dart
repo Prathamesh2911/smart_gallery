@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:smart_gallery/providers/favorites_provider.dart';
 import 'package:smart_gallery/screens/home_screen.dart';
 import 'package:smart_gallery/screens/album_screen.dart';
 import 'package:smart_gallery/providers/album_provider.dart';
@@ -23,6 +24,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AlbumProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => FavoritesProvider()),
       ],
       child: const MyApp(),
     ),

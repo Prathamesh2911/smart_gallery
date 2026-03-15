@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
+import '../providers/favorites_provider.dart';
 
 class PhotoViewerScreen extends StatefulWidget {
   final List<AssetEntity> photos;
@@ -47,6 +49,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final favProvider = context.watch<FavoritesProvider>();
+    final currentPhoto = widget.photos[_currentIndex];
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: PageView.builder(
@@ -56,7 +61,7 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         itemBuilder: (context, index) {
           final photo = widget.photos[index];
           return FutureBuilder<File?>(
-            future: photo.file,
+            future: photo.originFile, // safer than photo.file
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -74,21 +79,36 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
+            // Favorite button
             IconButton(
-              icon: const Icon(Icons.favorite, color: Colors.white),
+              icon: Icon(
+                Icons.favorite,
+                color: favProvider.isFavorite(currentPhoto.id)
+                    ? Colors.red
+                    : Colors.white,
+              ),
               onPressed: () {
+                favProvider.toggleFavorite(currentPhoto.id);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Added to favorites")),
+                  SnackBar(
+                    content: Text(
+                      favProvider.isFavorite(currentPhoto.id)
+                          ? "Added to favorites"
+                          : "Removed from favorites",
+                    ),
+                  ),
                 );
               },
             ),
+            // Share button
             IconButton(
               icon: const Icon(Icons.share, color: Colors.white),
-              onPressed: () => _sharePhoto(widget.photos[_currentIndex]),
+              onPressed: () => _sharePhoto(currentPhoto),
             ),
+            // Delete button
             IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _deletePhoto(widget.photos[_currentIndex]),
+              onPressed: () => _deletePhoto(currentPhoto),
             ),
           ],
         ),

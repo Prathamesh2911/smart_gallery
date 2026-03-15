@@ -27,8 +27,13 @@ const AlbumModelSchema = CollectionSchema(
       name: r'imagePaths',
       type: IsarType.stringList,
     ),
-    r'name': PropertySchema(
+    r'isFavorites': PropertySchema(
       id: 2,
+      name: r'isFavorites',
+      type: IsarType.bool,
+    ),
+    r'name': PropertySchema(
+      id: 3,
       name: r'name',
       type: IsarType.string,
     )
@@ -72,7 +77,8 @@ void _albumModelSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.date);
   writer.writeStringList(offsets[1], object.imagePaths);
-  writer.writeString(offsets[2], object.name);
+  writer.writeBool(offsets[2], object.isFavorites);
+  writer.writeString(offsets[3], object.name);
 }
 
 AlbumModel _albumModelDeserialize(
@@ -84,7 +90,8 @@ AlbumModel _albumModelDeserialize(
   final object = AlbumModel(
     date: reader.readDateTime(offsets[0]),
     imagePaths: reader.readStringList(offsets[1]) ?? [],
-    name: reader.readString(offsets[2]),
+    isFavorites: reader.readBoolOrNull(offsets[2]) ?? false,
+    name: reader.readString(offsets[3]),
   );
   object.id = id;
   return object;
@@ -102,6 +109,8 @@ P _albumModelDeserializeProp<P>(
     case 1:
       return (reader.readStringList(offset) ?? []) as P;
     case 2:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -530,6 +539,16 @@ extension AlbumModelQueryFilter
     });
   }
 
+  QueryBuilder<AlbumModel, AlbumModel, QAfterFilterCondition>
+      isFavoritesEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isFavorites',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<AlbumModel, AlbumModel, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -681,6 +700,18 @@ extension AlbumModelQuerySortBy
     });
   }
 
+  QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> sortByIsFavorites() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorites', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> sortByIsFavoritesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorites', Sort.desc);
+    });
+  }
+
   QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -720,6 +751,18 @@ extension AlbumModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> thenByIsFavorites() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorites', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> thenByIsFavoritesDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFavorites', Sort.desc);
+    });
+  }
+
   QueryBuilder<AlbumModel, AlbumModel, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -744,6 +787,12 @@ extension AlbumModelQueryWhereDistinct
   QueryBuilder<AlbumModel, AlbumModel, QDistinct> distinctByImagePaths() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'imagePaths');
+    });
+  }
+
+  QueryBuilder<AlbumModel, AlbumModel, QDistinct> distinctByIsFavorites() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isFavorites');
     });
   }
 
@@ -773,6 +822,12 @@ extension AlbumModelQueryProperty
       imagePathsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'imagePaths');
+    });
+  }
+
+  QueryBuilder<AlbumModel, bool, QQueryOperations> isFavoritesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isFavorites');
     });
   }
 

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:photo_manager/photo_manager.dart';
 import '../database/isar_service.dart';
 import '../models/album_model.dart';
 import '../widgets/album_tile.dart';
 import '../providers/user_provider.dart';
+import 'photo_viewer_screen.dart';
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -54,7 +56,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
       final album = AlbumModel(
         name: name,
         date: DateTime.now(),
-        imagePaths: [],
+        imagePaths: [], // stores AssetEntity IDs
       );
       await IsarService.addAlbum(album);
       _reloadAlbums();
@@ -100,23 +102,52 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No albums yet'));
-          }
+          final albums = snapshot.data ?? [];
+          final tiles = <Widget>[];
 
-          final albums = snapshot.data!;
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: albums.length,
-            itemBuilder: (context, index) {
-              final album = albums[index];
-              return AlbumTile(
+          // Favorites album tile
+          tiles.add(FutureBuilder<AlbumModel?>(
+            future: IsarService.getFavoritesAlbum(),
+            builder: (context, favSnap) {
+              if (!favSnap.hasData || favSnap.data == null) {
+                return const SizedBox.shrink();
+              }
+              final favAlbum = favSnap.data!;
+              return GestureDetector(
+                onTap: () async {
+                  final favoritePhotos = await Future.wait(
+                    favAlbum.imagePaths.map((id) => AssetEntity.fromId(id)),
+                  );
+                  final validPhotos =
+                  favoritePhotos.whereType<AssetEntity>().toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PhotoViewerScreen(
+                        photos: validPhotos,
+                        initialIndex: 0,
+                      ),
+                    ),
+                  );
+                },
+                child: AlbumTile(
+                  album: favAlbum,
+                  onDelete: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Favorites cannot be deleted")),
+                    );
+                  },
+                ),
+              );
+            },
+          ));
+
+          // Other albums (exclude Favorites)
+          tiles.addAll(
+            albums.where((a) => !a.isFavorites).map(
+                  (album) => AlbumTile(
                 album: album,
                 onDelete: () async {
                   await IsarService.deleteAlbum(album.id);
@@ -125,8 +156,17 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                     SnackBar(content: Text("Album '${album.name}' deleted")),
                   );
                 },
-              );
-            },
+              ),
+            ),
+          );
+
+          return GridView.count(
+            padding: const EdgeInsets.all(12),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.75,
+            children: tiles,
           );
         },
       ),

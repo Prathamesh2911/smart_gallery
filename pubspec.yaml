@@ -16,7 +16,8 @@ dependencies:
 
   # Gallery Access
   permission_handler: ^11.3.0
-  photo_manager: ^3.0.0
+  photo_manager: ^3.9.0
+  photo_manager_image_provider: ^2.2.0
 
   # Local Database
   isar: ^3.1.0+1

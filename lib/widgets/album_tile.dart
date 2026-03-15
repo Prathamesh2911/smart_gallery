@@ -1,5 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
+import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import '../models/album_model.dart';
 
 class AlbumTile extends StatelessWidget {
@@ -14,26 +15,35 @@ class AlbumTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         children: [
-          // Show first image as cover, or placeholder
+          // Show first asset thumbnail, or placeholder
           album.imagePaths.isNotEmpty
-              ? Image.file(
-            File(album.imagePaths[0]),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
+              ? FutureBuilder<AssetEntity?>(
+            future: AssetEntity.fromId(album.imagePaths.first),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final entity = snapshot.data;
+              if (entity == null) {
+                return _placeholder();
+              }
+              return SizedBox.expand(
+                child: AssetEntityImage(
+                  entity,
+                  isOriginal: false,
+                  thumbnailSize: const ThumbnailSize(300, 300),
+                  fit: BoxFit.cover,
+                ),
+              );
+            },
           )
-              : Container(
-            color: Colors.grey[300],
-            child: const Center(
-              child: Icon(Icons.photo, size: 60, color: Colors.grey),
-            ),
-          ),
+              : _placeholder(),
 
           // Gradient overlay for text readability
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+                colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
               ),
@@ -87,6 +97,15 @@ class AlbumTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(Icons.photo, size: 60, color: Colors.grey),
       ),
     );
   }

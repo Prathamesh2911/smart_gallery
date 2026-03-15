@@ -23,10 +23,31 @@ class IsarService {
     });
   }
 
-  // ✅ New method to delete album
   static Future<void> deleteAlbum(int id) async {
     await isar.writeTxn(() async {
       await isar.albumModels.delete(id);
+    });
+  }
+
+  // Favorites helpers
+  static Future<AlbumModel?> getFavoritesAlbum() async {
+    return await isar.albumModels.filter().isFavoritesEqualTo(true).findFirst();
+  }
+
+  static Future<void> saveFavorites(List<String> ids) async {
+    await isar.writeTxn(() async {
+      var favAlbum = await getFavoritesAlbum();
+      if (favAlbum == null) {
+        favAlbum = AlbumModel(
+          name: "Favorites",
+          date: DateTime.now(),
+          imagePaths: ids,
+          isFavorites: true,
+        );
+      } else {
+        favAlbum.imagePaths = ids;
+      }
+      await isar.albumModels.put(favAlbum);
     });
   }
 }
